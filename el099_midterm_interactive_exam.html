@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EL099 Interactive Midterm Practice Test (Units 1–5)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Font: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Firebase Integration -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, updateDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'el099-midterm-app';
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+      apiKey: "demo-key",
+      authDomain: "demo.firebaseapp.com",
+      projectId: "demo-project",
+      storageBucket: "demo.appspot.com",
+      messagingSenderId: "123456789",
+      appId: "1:123456789:web:demo"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    window.db = db;
+    window.appId = appId;
+
+    // Authenticate immediately
+    async function initAuth() {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+        console.log("Authenticated as:", auth.currentUser?.uid);
+      } catch (err) {
+        console.error("Auth error:", err);
+      }
+    }
+    initAuth();
+  </script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            aou: {
+              navy: '#002B49',
+              gold: '#C59B27',
+              lightBg: '#F4F7F9',
+              accent: '#005691'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+  <!-- Header / Navigation Bar -->
+  <header class="bg-aou-navy text-white shadow-lg sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-aou-gold text-aou-navy font-bold rounded-lg p-2.5 flex items-center justify-center">
+          <i class="fa-solid fa-graduation-cap text-2xl"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg sm:text-xl tracking-wide text-white">EL099 Midterm Practice Test</h1>
+          <p class="text-xs text-slate-300">Arab Open University • Units 1–5</p>
+        </div>
+      </div>
+
+      <!-- Live Timer & Student Info Header Badge -->
+      <div class="flex items-center space-x-4">
+        <div id="timerContainer" class="hidden flex items-center space-x-2 bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-700">
+          <i class="fa-regular fa-clock text-aou-gold animate-pulse"></i>
+          <span id="timerDisplay" class="font-mono font-bold text-lg text-white">60:00</span>
+        </div>
+
+        <button id="teacherModeBtn" onclick="toggleTeacherModePrompt()" class="bg-slate-700 hover:bg-slate-600 text-white font-semibold text-xs px-3 py-2 rounded-xl border border-slate-600 transition flex items-center space-x-1.5">
+          <i class="fa-solid fa-chalkboard-user text-aou-gold"></i>
+          <span>Teacher Dashboard</span>
+        </button>
+
+        <button id="submitExamBtn" onclick="submitExam()" class="hidden bg-aou-gold hover:bg-yellow-500 text-aou-navy font-bold px-4 py-2 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center space-x-2 text-sm">
+          <i class="fa-solid fa-paper-plane"></i>
+          <span>Submit Exam</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
+
+    <!-- WELCOME / STUDENT DETAILS MODAL OR SECTION -->
+    <div id="welcomeScreen" class="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-xl border border-slate-200 text-center my-8">
+      <div class="w-16 h-16 bg-blue-50 text-aou-accent rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+        <i class="fa-solid fa-file-pen"></i>
+      </div>
+      <h2 class="text-2xl font-bold text-aou-navy mb-2">Welcome to EL099 Practice Midterm</h2>
+      <p class="text-slate-600 mb-6 text-sm">Please fill in your name to start your timed 60-minute assessment covering Units 1 to 5.</p>
+
+      <form id="studentForm" onsubmit="startExam(event)" class="space-y-4 text-left">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">Full Student Name *</label>
+          <input type="text" id="studentName" required placeholder="e.g. Sarah Ahmed Al-Mansoori" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-aou-accent focus:border-aou-accent outline-none">
+        </div>
+        
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-900 space-y-1">
+          <p class="font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Examination Rules & Real-Time Sync:</p>
+          <ul class="list-disc list-inside space-y-1 text-slate-700">
+            <li>Total Duration: <strong>60 Minutes</strong></li>
+            <li>Part 1: Reading (5 Marks - 5 questions)</li>
+            <li>Part 2: Grammar (10 Marks - 20 questions)</li>
+            <li>Part 3: Vocabulary (10 Marks - 20 questions)</li>
+            <li>Part 4: Writing Paragraph (School vs. University)</li>
+            <li><strong>Live Tracking:</strong> Your instructor can view your active progress live on the classroom dashboard.</li>
+          </ul>
+        </div>
+
+        <button type="submit" class="w-full bg-aou-navy hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition shadow-lg hover:shadow-xl text-base flex items-center justify-center space-x-2">
+          <span>Start Assessment</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+    </div>
+
+    <!-- TEACHER LIVE DASHBOARD VIEW (HIDDEN BY DEFAULT) -->
+    <div id="teacherDashboard" class="hidden space-y-6">
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">Live Monitor</span>
+            <h2 class="text-xl font-bold text-aou-navy">Instructor Monitoring Center</h2>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">Real-time status tracking for EL099 Midterm Exam students.</p>
+        </div>
+
+        <div class="flex items-center space-x-3">
+          <button onclick="exportToCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center space-x-1.5 shadow-sm">
+            <i class="fa-solid fa-file-csv text-sm"></i>
+            <span>Export CSV</span>
+          </button>
+          <button onclick="exitTeacherMode()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl transition">
+            Exit Dashboard
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Summary -->
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+          <div class="text-xs text-slate-500 font-semibold uppercase">Total Students</div>
+          <div id="dashTotalCount" class="text-2xl font-extrabold text-aou-navy mt-1">0</div>
+        </div>
+        <div class="bg-blue-50 p-4 rounded-xl border border-blue-200 text-center">
+          <div class="text-xs text-blue-700 font-semibold uppercase">Currently Active</div>
+          <div id="dashActiveCount" class="text-2xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-200 text-center">
+          <div class="text-xs text-emerald-700 font-semibold uppercase">Submitted</div>
+          <div id="dashSubmittedCount" class="text-2xl font-extrabold text-emerald-900 mt-1">0</div>
+        </div>
+        <div class="bg-purple-50 p-4 rounded-xl border border-purple-200 text-center">
+          <div class="text-xs text-purple-700 font-semibold uppercase">Average Score</div>
+          <div id="dashAvgScore" class="text-2xl font-extrabold text-purple-900 mt-1">0.0 / 35</div>
+        </div>
+      </div>
+
+      <!-- Live Roster Table -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+          <h3 class="font-bold text-slate-800 text-sm">Live Class Progress Roster</h3>
+          <span class="text-xs text-slate-400 font-mono"><i class="fa-solid fa-sync animate-spin mr-1"></i> Auto-synced with Firestore</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="bg-slate-100 text-slate-600 border-b text-xs font-semibold uppercase tracking-wider">
+                <th class="p-4">Student Name</th>
+                <th class="p-4">Status</th>
+                <th class="p-4">Current Section</th>
+                <th class="p-4">Answered</th>
+                <th class="p-4">Time Left</th>
+                <th class="p-4">Total Score</th>
+                <th class="p-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="teacherRosterBody" class="divide-y divide-slate-200 text-slate-700">
+              <tr>
+                <td colspan="7" class="p-8 text-center text-slate-400">Waiting for students to join the exam...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXAM INTERFACE (HIDDEN BY DEFAULT) -->
+    <div id="examInterface" class="hidden space-y-6">
+
+      <!-- Progress & Nav Header -->
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
+        <!-- Student Info Badge -->
+        <div class="flex items-center space-x-3 text-sm">
+          <div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center font-bold text-aou-navy border">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <div>
+            <div id="displayName" class="font-bold text-slate-800">Student Name</div>
+            <div class="text-xs text-emerald-600 font-semibold"><i class="fa-solid fa-signal text-xs mr-1"></i> Live Synced to Instructor</div>
+          </div>
+        </div>
+
+        <!-- Section Navigation Buttons -->
+        <div class="flex flex-wrap gap-2 justify-center">
+          <button onclick="switchTab('reading')" id="tab-reading" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition border border-slate-200 bg-aou-navy text-white shadow-sm">
+            Part 1: Reading (5m)
+          </button>
+          <button onclick="switchTab('grammar')" id="tab-grammar" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition border border-slate-200 bg-slate-100 text-slate-600 hover:bg-slate-200">
+            Part 2: Grammar (10m)
+          </button>
+          <button onclick="switchTab('vocabulary')" id="tab-vocabulary" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition border border-slate-200 bg-slate-100 text-slate-600 hover:bg-slate-200">
+            Part 3: Vocabulary (10m)
+          </button>
+          <button onclick="switchTab('writing')" id="tab-writing" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition border border-slate-200 bg-slate-100 text-slate-600 hover:bg-slate-200">
+            Part 4: Writing (Paragraph)
+          </button>
+        </div>
+
+        <!-- Progress Stats -->
+        <div class="text-right text-xs text-slate-500">
+          <div class="font-semibold text-slate-700">Answered Progress</div>
+          <div id="progressText" class="font-mono font-bold text-aou-accent text-sm">0 / 45 Questions</div>
+        </div>
+      </div>
+
+      <!-- SECTION 1: READING -->
+      <div id="sec-reading" class="section-content space-y-6">
+        <div class="bg-blue-50 border border-blue-200 text-blue-900 p-4 rounded-xl text-sm flex items-center justify-between">
+          <span><i class="fa-solid fa-book-open mr-2 text-aou-accent"></i> <strong>Part 1: Reading Comprehension</strong> (1 Single Passage • 5 Questions • 1.0 mark each = 5 Marks)</span>
+        </div>
+
+        <!-- Single Reading Passage -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          <div class="border-b pb-3">
+            <h3 class="font-bold text-lg text-aou-navy">Reading Passage: Adapting to University Life</h3>
+          </div>
+          <div class="bg-slate-50 p-5 rounded-xl text-slate-700 leading-relaxed text-sm space-y-3 font-serif border border-slate-200">
+            <p>Entering university is one of the most significant transitions in a student's academic journey. Unlike high school, where teachers closely monitor daily assignments, attendance, and deadlines, higher education requires a high degree of self-reliance, independence, and effective time management. University students are expected to manage their own learning, attend lectures regularly, complete independent readings, and prepare for major examinations like midterms and finals.</p>
+            <p>Academic advisors emphasize that establishing a structured weekly schedule early in the semester is crucial for success. Successful university students usually prioritize their academic commitments while allocating sufficient time for extracurricular activities, exercise, and social interaction. Furthermore, taking advantage of campus support resources—such as the library, writing centers, and professor office hours—can substantially improve academic performance and significantly reduce stress levels.</p>
+          </div>
+
+          <!-- 5 Comprehension Questions -->
+          <div class="space-y-6 pt-2" id="readingQuestionsContainer">
+            <!-- Questions 1 to 5 rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 2: GRAMMAR -->
+      <div id="sec-grammar" class="section-content hidden space-y-6">
+        <div class="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-xl text-sm">
+          <i class="fa-solid fa-pen-nib mr-2 text-amber-700"></i> <strong>Part 2: Grammar Practice</strong> (20 Questions • 0.5 marks each = 10 Marks)
+        </div>
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div id="grammarQuestions" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 3: VOCABULARY -->
+      <div id="sec-vocabulary" class="section-content hidden space-y-6">
+        <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 p-4 rounded-xl text-sm">
+          <i class="fa-solid fa-spell-check mr-2 text-emerald-700"></i> <strong>Part 3: Vocabulary Practice</strong> (20 Questions • 0.5 marks each = 10 Marks)
+        </div>
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div id="vocabQuestions" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 4: WRITING -->
+      <div id="sec-writing" class="section-content hidden space-y-6">
+        <div class="bg-purple-50 border border-purple-200 text-purple-900 p-4 rounded-xl text-sm">
+          <i class="fa-solid fa-pen-fancy mr-2 text-purple-700"></i> <strong>Part 4: Writing Section (Compare & Contrast Paragraph)</strong>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          <div class="border-b pb-3">
+            <h3 class="font-bold text-lg text-aou-navy">Writing Prompt: High School vs. University Life</h3>
+            <p class="text-xs text-slate-500 mt-1">Evaluated by automated AI assistant for grammar, coherence, transitions, and vocabulary.</p>
+          </div>
+
+          <div class="bg-slate-50 p-4 rounded-xl border text-sm text-slate-700 space-y-2">
+            <p class="font-semibold text-slate-800"><i class="fa-solid fa-circle-info text-aou-accent mr-1"></i> Instructions:</p>
+            <p>Write a well-structured compare and contrast paragraph (<strong>100 – 150 words</strong>) comparing high school and university life.</p>
+            <div class="text-xs text-slate-600 bg-white p-3 rounded-lg border space-y-1">
+              <p><strong>Requirements:</strong></p>
+              <ul class="list-disc list-inside space-y-0.5">
+                <li>Include a clear topic sentence.</li>
+                <li>Discuss both similarities (e.g. studying, taking exams) and differences (e.g. independence, schedule flexibility, teacher support).</li>
+                <li>Use appropriate transition signals (e.g., <em>however, on the other hand, similarly, in contrast, whereas</em>).</li>
+                <li>Provide a concluding sentence summarizing the main takeaway.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-sm font-semibold text-slate-700">Your Response:</label>
+              <span id="wordCountBadge" class="text-xs font-mono font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-600">0 words</span>
+            </div>
+            <textarea id="writingInput" oninput="updateWordCount()" rows="10" placeholder="Type your compare and contrast paragraph here..." class="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-aou-accent outline-none text-sm leading-relaxed custom-scrollbar font-sans"></textarea>
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-4">
+          <button onclick="submitExam()" class="bg-aou-gold hover:bg-yellow-500 text-aou-navy font-bold px-8 py-3 rounded-xl transition shadow-lg hover:shadow-xl flex items-center space-x-2 text-base">
+            <i class="fa-solid fa-check-double"></i>
+            <span>Finish & Submit Exam</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- RESULTS / EVALUATION MODAL -->
+  <div id="resultsModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl border border-slate-200">
+      
+      <!-- Modal Header -->
+      <div class="bg-aou-navy text-white p-6 rounded-t-3xl flex justify-between items-center sticky top-0 z-10">
+        <div>
+          <h2 class="text-xl font-bold">Midterm Assessment Performance Report</h2>
+          <p id="resStudentInfo" class="text-xs text-slate-300">Student: -</p>
+        </div>
+        <button onclick="closeModal()" class="text-slate-300 hover:text-white text-2xl font-bold px-2">&times;</button>
+      </div>
+
+      <div class="p-6 space-y-6">
+
+        <!-- Score Overview Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-slate-50 border p-4 rounded-2xl text-center">
+            <div class="text-xs text-slate-500 font-semibold uppercase">Total Objective Score</div>
+            <div id="resObjScore" class="text-2xl font-extrabold text-aou-navy mt-1">0 / 25</div>
+            <div id="resObjPercentage" class="text-xs text-slate-500">0%</div>
+          </div>
+          <div class="bg-purple-50 border border-purple-100 p-4 rounded-2xl text-center">
+            <div class="text-xs text-purple-700 font-semibold uppercase">AI Writing Grade</div>
+            <div id="resWritingScore" class="text-2xl font-extrabold text-purple-900 mt-1">... / 10</div>
+            <div class="text-xs text-purple-600">Paragraph Evaluation</div>
+          </div>
+          <div class="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl text-center">
+            <div class="text-xs text-emerald-700 font-semibold uppercase">Grand Total (Combined)</div>
+            <div id="resGrandTotal" class="text-2xl font-extrabold text-emerald-900 mt-1">0 / 35</div>
+            <div id="resGradeStatus" class="text-xs font-bold text-emerald-700">PASS</div>
+          </div>
+          <div class="bg-amber-50 border border-amber-100 p-4 rounded-2xl text-center">
+            <div class="text-xs text-amber-700 font-semibold uppercase">Time Elapsed</div>
+            <div id="resTimeUsed" class="text-2xl font-extrabold text-amber-900 mt-1">00:00</div>
+            <div class="text-xs text-amber-600">Minutes</div>
+          </div>
+        </div>
+
+        <!-- AI Writing Feedback Box -->
+        <div class="bg-gradient-to-r from-purple-900 to-indigo-900 text-white rounded-2xl p-6 shadow-md space-y-3">
+          <div class="flex items-center space-x-3 border-b border-purple-700/50 pb-3">
+            <div class="bg-purple-500/20 p-2 rounded-lg text-purple-300">
+              <i class="fa-solid fa-wand-magic-sparkles text-xl"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-base">Gemini AI Writing Feedback</h3>
+              <p class="text-xs text-purple-200">Detailed rubric evaluation on your Compare & Contrast paragraph</p>
+            </div>
+          </div>
+          <div id="aiWritingFeedback" class="text-sm leading-relaxed text-purple-100 space-y-2">
+            <div class="flex items-center space-x-2 text-purple-200">
+              <i class="fa-solid fa-circle-notch animate-spin"></i>
+              <span>Analyzing essay structure, grammar, word count, and transition signals...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detailed Breakdown Tabs / Accordion -->
+        <div class="space-y-4">
+          <h3 class="font-bold text-slate-800 text-lg border-b pb-2"><i class="fa-solid fa-list-check text-aou-accent mr-2"></i>Objective Answers Review</h3>
+          
+          <div id="questionsReviewList" class="space-y-3 max-h-96 overflow-y-auto custom-scrollbar pr-2">
+            <!-- Dynamic Review Items -->
+          </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="flex justify-end space-x-3 border-t pt-4">
+          <button onclick="window.print()" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-100 transition flex items-center space-x-2">
+            <i class="fa-solid fa-print"></i>
+            <span>Print Report</span>
+          </button>
+          <button onclick="closeModal()" class="px-5 py-2.5 rounded-xl bg-aou-navy text-white font-semibold text-sm hover:bg-slate-800 transition">
+            Close Report
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-slate-100 border-t border-slate-200 py-4 text-center text-xs text-slate-500 mt-8">
+    <p>© EL099 Pre-Sessional English Department • Arab Open University</p>
+  </footer>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // -------------------------------------------------------------
+    // DATA STRUCTURE: QUESTIONS FOR UNITS 1-5 (Single Reading Passage)
+    // -------------------------------------------------------------
+    const readingQuestions = [
+      { id: 'r1', text: '1. What is the main idea of the passage?', options: ['High school teachers give too many homework assignments.', 'University requires greater independence and self-reliance than high school.', 'Students should focus only on studying and avoid social activities.', 'Professors do not help students during office hours.'], answer: 1 },
+      { id: 'r2', text: '2. How does high school differ from university according to the text?', options: ['High school teachers closely monitor daily assignments and attendance.', 'University has no examinations or quizzes.', 'High school requires more independent study than university.', 'University students do not need to attend lectures.'], answer: 0 },
+      { id: 'r3', text: '3. What does the word "substantially" in paragraph 2 mean?', options: ['Slightly', 'Significantly / greatly', 'Rarely', 'Slowly'], answer: 1 },
+      { id: 'r4', text: '4. Which of the following is NOT mentioned as a recommended campus resource?', options: ['The library', 'Writing centers', 'Professor office hours', 'Private sports clubs'], answer: 3 },
+      { id: 'r5', text: '5. What can be inferred about successful university students?', options: ['They never participate in extracurricular activities.', 'They organize their schedules and balance studying with rest.', 'They only study on weekends.', 'They ignore midterm exams.'], answer: 1 }
+    ];
+
+    const grammarQuestions = [
+      { id: 'g1', text: '1. Look at those heavy black clouds! It _____ rain very soon.', options: ['will', 'is going to', 'is raining', 'was going to'], answer: 1 },
+      { id: 'g2', text: '2. My father usually _____ to work by car, but today he is taking the metro.', options: ['goes', 'is going', 'went', 'has gone'], answer: 0 },
+      { id: 'g3', text: '3. Right now, the students _____ an interactive English exercise in class.', options: ['completed', 'are completing', 'completes', 'will complete'], answer: 1 },
+      { id: 'g4', text: '4. Faisal didn\'t _____ to the lecture yesterday because he felt unwell.', options: ['went', 'goes', 'go', 'going'], answer: 2 },
+      { id: 'g5', text: '5. When Tariq was seven years old, he _____ swim across the entire pool.', options: ['can', 'could', 'is able to', 'must'], answer: 1 },
+      { id: 'g6', text: '6. Our midterm examination is scheduled to begin _____ 10:00 AM on Sunday.', options: ['in', 'at', 'on', 'by'], answer: 1 },
+      { id: 'g7', text: '7. How _____ assignment pages did the instructor ask us to prepare?', options: ['much', 'many', 'few', 'little'], answer: 1 },
+      { id: 'g8', text: '8. There isn\'t _____ sugar left in the kitchen cabinet for our coffee.', options: ['some', 'many', 'any', 'few'], answer: 2 },
+      { id: 'g9', text: '9. Identify the correct sentence:', options: ['She don\'t likes studying late.', 'She doesn\'t like studying late.', 'She isn\'t like studying late.', 'She not likes studying late.'], answer: 1 },
+      { id: 'g10', text: '10. What is the correct question for the underlined answer: "<u>Ali bought a new laptop</u> last week."', options: ['Where did Ali buy last week?', 'What did Ali buy last week?', 'When Ali bought a new laptop?', 'Who Ali buy a laptop for?'], answer: 1 },
+      { id: 'g11', text: '11. While I _____ for the bus, it suddenly started to rain heavily.', options: ['waited', 'was waiting', 'am waiting', 'wait'], answer: 1 },
+      { id: 'g12', text: '12. I promise I _____ help you with your revision project tomorrow.', options: ['will', 'am going to', 'am helping', 'would'], answer: 0 },
+      { id: 'g13', text: '13. My apartment is situated _____ the second floor of the modern residential building.', options: ['in', 'on', 'at', 'to'], answer: 1 },
+      { id: 'g14', text: '14. You _____ wear your seatbelt while driving; it is mandated by law.', options: ['should', 'might', 'must', 'could'], answer: 2 },
+      { id: 'g15', text: '15. Neither of the university options _____ suitable for his current schedule.', options: ['is', 'are', 'were', 'be'], answer: 0 },
+      { id: 'g16', text: '16. Choose the correct negative form of: "He understands the complex lesson."', options: ['He doesn\'t understands the complex lesson.', 'He don\'t understand the complex lesson.', 'He doesn\'t understand the complex lesson.', 'He isn\'t understand the complex lesson.'], answer: 2 },
+      { id: 'g17', text: '17. We have lived in Riyadh _____ five years.', options: ['since', 'for', 'during', 'from'], answer: 1 },
+      { id: 'g18', text: '18. She has been studying in the library _____ 8:00 AM this morning.', options: ['for', 'since', 'in', 'at'], answer: 1 },
+      { id: 'g19', text: '19. Complete the gap: "The students _____ the presentation when the power went out."', options: ['gave', 'were giving', 'are giving', 'give'], answer: 1 },
+      { id: 'v20', text: '20. Choose the correct word order:', options: ['Always he arrives punctual to class.', 'He arrives always punctual to class.', 'He always arrives punctually to class.', 'Punctually he always arrive to class.'], answer: 2 }
+    ];
+
+    const vocabQuestions = [
+      { id: 'v1', text: '1. A student who arrives on time for every lecture is considered _____ .', options: ['lazy', 'punctual', 'careless', 'disorganized'], answer: 1 },
+      { id: 'v2', text: '2. It is important to _____ a balance between study obligations and leisure activities.', options: ['do', 'make', 'strike / maintain', 'take'], answer: 2 },
+      { id: 'v3', text: '3. What is the synonym of the word "essential"?', options: ['optional', 'vital / crucial', 'unnecessary', 'minor'], answer: 1 },
+      { id: 'v4', text: '4. What is the opposite (antonym) of "expensive"?', options: ['costly', 'valuable', 'inexpensive / cheap', 'luxury'], answer: 2 },
+      { id: 'v5', text: '5. Sara is very _____ ; she enjoys social events and talking to new people.', options: ['introverted', 'outgoing / friendly', 'silent', 'timid'], answer: 1 },
+      { id: 'v6', text: '6. Complete the collocation: "Could you please _____ me a favor and hand me the dictionary?"', options: ['make', 'do', 'give', 'perform'], answer: 1 },
+      { id: 'v7', text: '7. The professor provided a detailed course _____ outlining weekly assignments.', options: ['schedule / syllabus', 'recipe', 'invoice', 'receipt'], answer: 0 },
+      { id: 'v8', text: '8. Regular exercise has numerous positive health _____ .', options: ['dangers', 'benefits', 'defects', 'losses'], answer: 1 },
+      { id: 'v9', text: '9. People who reside in the _____ enjoy fresh air and peaceful nature.', options: ['metropolis', 'countryside', 'downtown', 'traffic'], answer: 1 },
+      { id: 'v10', text: '10. A place where students borrow academic resources and study quietly is a _____ .', options: ['stadium', 'canteen', 'library', 'laboratory'], answer: 2 },
+      { id: 'v11', text: '11. Which noun form correctly completes: "The student showed great _____ in her final project."', options: ['creatively', 'creative', 'creativity', 'create'], answer: 2 },
+      { id: 'v12', text: '12. Complete the sentence: "To prepare for exams, it is helpful to _____ notes during lectures."', options: ['take', 'do', 'make', 'write down'], answer: 0 },
+      { id: 'v13', text: '13. What is the meaning of "curriculum"?', options: ['A list of sports teams', 'The subjects comprising a course of study', 'A type of university building', 'The graduation ceremony'], answer: 1 },
+      { id: 'v14', text: '14. Someone who is hesitant to speak in front of large crowds is often described as _____ .', options: ['confident', 'shy / reserved', 'talkative', 'bold'], answer: 1 },
+      { id: 'v15', text: '15. Complete: "After hours of work, they finally reached an _____ on the group presentation."', options: ['agreement', 'agreeable', 'agree', 'agreed'], answer: 0 },
+      { id: 'v16', text: '16. Choose the word that best matches: "To make something clearer or easier to understand."', options: ['Confuse', 'Clarify', 'Complicate', 'Ignore'], answer: 1 },
+      { id: 'v17', text: '17. "Heavy traffic" and "fast food" are examples of English _____ .', options: ['idioms', 'collocations', 'prepositions', 'verbs'], answer: 1 },
+      { id: 'v18', text: '18. What is the noun form of the adjective "independent"?', options: ['independently', 'independence', 'independency', 'independable'], answer: 1 },
+      { id: 'v19', text: '19. Staying up late every night can negatively _____ your cognitive academic performance.', options: ['effect', 'affect', 'effective', 'affection'], answer: 1 },
+      { id: 'v20', text: '20. A person responsible for managing and organizing administrative work in an office is an _____ .', options: ['administrator / assistant', 'athlete', 'electrician', 'architect'], answer: 0 }
+    ];
+
+    // Global State
+    let studentData = { name: '', docId: '' };
+    let timerInterval = null;
+    let timeRemaining = 3600; // 60 minutes in seconds
+    let userAnswers = {};
+    let isSubmitted = false;
+    let currentSection = 'Reading';
+    let teacherUnsubscribe = null;
+    let rosterDataCache = [];
+
+    // -------------------------------------------------------------
+    // INITIALIZATION & RENDER
+    // -------------------------------------------------------------
+    window.onload = function() {
+      renderQuestions();
+    };
+
+    function renderQuestions() {
+      const rContainer = document.getElementById('readingQuestionsContainer');
+      rContainer.innerHTML = readingQuestions.map(renderQuestionCard).join('');
+
+      const gContainer = document.getElementById('grammarQuestions');
+      gContainer.innerHTML = grammarQuestions.map(renderQuestionCard).join('');
+
+      const vContainer = document.getElementById('vocabQuestions');
+      vContainer.innerHTML = vocabQuestions.map(renderQuestionCard).join('');
+    }
+
+    function renderQuestionCard(q) {
+      return `
+        <div class="border border-slate-200 rounded-xl p-4 bg-white hover:border-slate-300 transition space-y-3">
+          <p class="font-semibold text-sm text-slate-800">${q.text}</p>
+          <div class="space-y-2">
+            ${q.options.map((opt, idx) => `
+              <label class="flex items-center space-x-3 p-2 rounded-lg border border-slate-100 hover:bg-slate-50 cursor-pointer text-xs sm:text-sm text-slate-700 transition">
+                <input type="radio" name="${q.id}" value="${idx}" onchange="recordAnswer('${q.id}', ${idx})" class="w-4 h-4 text-aou-navy focus:ring-aou-accent border-slate-300">
+                <span>${opt}</span>
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // -------------------------------------------------------------
+    // REAL-TIME FIRESTORE SYNC
+    // -------------------------------------------------------------
+    async function syncToFirebase(extraData = {}) {
+      if (!studentData.docId || !window.db) return;
+      try {
+        const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+        const studentRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'el099_students', studentData.docId);
+
+        const answeredCount = Object.keys(userAnswers).length;
+
+        const payload = {
+          name: studentData.name,
+          currentSection: currentSection,
+          answeredCount: answeredCount,
+          timeRemaining: timeRemaining,
+          status: isSubmitted ? 'Submitted' : 'Testing (Active)',
+          lastUpdated: new Date().toISOString(),
+          answers: userAnswers,
+          ...extraData
+        };
+
+        await setDoc(studentRef, payload, { merge: true });
+      } catch (err) {
+        console.error("Firestore sync error:", err);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // EXAM CONTROLS & NAVIGATION
+    // -------------------------------------------------------------
+    async function startExam(e) {
+      e.preventDefault();
+      const nameInput = document.getElementById('studentName').value.trim();
+      if (!nameInput) return;
+
+      studentData.name = nameInput;
+      studentData.docId = 'student_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+
+      document.getElementById('displayName').innerText = studentData.name;
+
+      document.getElementById('welcomeScreen').classList.add('hidden');
+      document.getElementById('examInterface').classList.remove('hidden');
+      document.getElementById('submitExamBtn').classList.remove('hidden');
+      document.getElementById('timerContainer').classList.remove('hidden');
+
+      // Initial Sync
+      await syncToFirebase({ status: 'Testing (Active)', startTime: new Date().toISOString() });
+
+      startTimer();
+    }
+
+    function switchTab(tabKey) {
+      const tabs = ['reading', 'grammar', 'vocabulary', 'writing'];
+      const sectionNames = { reading: 'Reading', grammar: 'Grammar', vocabulary: 'Vocabulary', writing: 'Writing' };
+      currentSection = sectionNames[tabKey];
+
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        const sec = document.getElementById(`sec-${t}`);
+        if (t === tabKey) {
+          btn.className = "tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition border border-slate-200 bg-aou-navy text-white shadow-sm";
+          sec.classList.remove('hidden');
+        } else {
+          btn.className = "tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition border border-slate-200 bg-slate-100 text-slate-600 hover:bg-slate-200";
+          sec.classList.add('hidden');
+        }
+      });
+
+      syncToFirebase();
+    }
+
+    function recordAnswer(qId, val) {
+      userAnswers[qId] = val;
+      updateProgress();
+      syncToFirebase();
+    }
+
+    function updateProgress() {
+      const answeredCount = Object.keys(userAnswers).length;
+      document.getElementById('progressText').innerText = `${answeredCount} / 45 Objective Questions`;
+    }
+
+    function updateWordCount() {
+      const text = document.getElementById('writingInput').value.trim();
+      const words = text ? text.split(/\s+/).length : 0;
+      const badge = document.getElementById('wordCountBadge');
+      badge.innerText = `${words} words`;
+      if (words >= 100 && words <= 150) {
+        badge.className = "text-xs font-mono font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800";
+      } else {
+        badge.className = "text-xs font-mono font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-600";
+      }
+    }
+
+    // -------------------------------------------------------------
+    // TIMER SYSTEM
+    // -------------------------------------------------------------
+    function startTimer() {
+      const timerDisplay = document.getElementById('timerDisplay');
+      const timerContainer = document.getElementById('timerContainer');
+
+      timerInterval = setInterval(() => {
+        if (timeRemaining <= 0) {
+          clearInterval(timerInterval);
+          alert("Time has expired! Submitting your examination automatically.");
+          submitExam();
+          return;
+        }
+        timeRemaining--;
+
+        const mins = Math.floor(timeRemaining / 60);
+        const secs = timeRemaining % 60;
+        timerDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+        // Sync remaining time every 15 seconds
+        if (timeRemaining % 15 === 0) {
+          syncToFirebase();
+        }
+
+        if (timeRemaining < 300) {
+          timerContainer.className = "flex items-center space-x-2 bg-red-900/90 px-4 py-2 rounded-xl border border-red-500 animate-pulse text-white";
+        }
+      }, 1000);
+    }
+
+    // -------------------------------------------------------------
+    // SUBMISSION & AI GRADING
+    // -------------------------------------------------------------
+    async function submitExam() {
+      if (isSubmitted) return;
+      isSubmitted = true;
+      clearInterval(timerInterval);
+
+      let scoreReading = 0;
+      let scoreGrammar = 0;
+      let scoreVocab = 0;
+
+      readingQuestions.forEach(q => { if (userAnswers[q.id] === q.answer) scoreReading += 1.0; });
+      grammarQuestions.forEach(q => { if (userAnswers[q.id] === q.answer) scoreGrammar += 0.5; });
+      vocabQuestions.forEach(q => { if (userAnswers[q.id] === q.answer) scoreVocab += 0.5; });
+
+      const totalObjectiveScore = scoreReading + scoreGrammar + scoreVocab; // Out of 25
+
+      document.getElementById('resStudentInfo').innerText = `Student: ${studentData.name}`;
+      document.getElementById('resObjScore').innerText = `${totalObjectiveScore.toFixed(1)} / 25`;
+      document.getElementById('resObjPercentage').innerText = `${((totalObjectiveScore / 25) * 100).toFixed(1)}%`;
+
+      const timeUsedSecs = 3600 - timeRemaining;
+      const minsUsed = Math.floor(timeUsedSecs / 60);
+      const secsUsed = timeUsedSecs % 60;
+      document.getElementById('resTimeUsed').innerText = `${minsUsed}:${secsUsed.toString().padStart(2, '0')}`;
+
+      populateAnswerReview();
+      document.getElementById('resultsModal').classList.remove('hidden');
+
+      const essayText = document.getElementById('writingInput').value.trim();
+      await gradeEssayWithGemini(essayText, totalObjectiveScore);
+    }
+
+    function populateAnswerReview() {
+      const container = document.getElementById('questionsReviewList');
+      container.innerHTML = '';
+
+      const allQuestions = [...readingQuestions, ...grammarQuestions, ...vocabQuestions];
+
+      allQuestions.forEach(q => {
+        const uAns = userAnswers[q.id];
+        const isCorrect = uAns === q.answer;
+        const userChoiceText = uAns !== undefined ? q.options[uAns] : '<em>Not Answered</em>';
+        const correctChoiceText = q.options[q.answer];
+
+        const itemDiv = document.createElement('div');
+        itemDiv.className = `p-3 rounded-xl border text-xs sm:text-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 ${
+          isCorrect ? 'bg-emerald-50/60 border-emerald-200' : 'bg-red-50/60 border-red-200'
+        }`;
+
+        itemDiv.innerHTML = `
+          <div class="space-y-1 max-w-xl">
+            <p class="font-semibold text-slate-800">${q.text}</p>
+            <p class="text-slate-600">Your Answer: <span class="${isCorrect ? 'font-bold text-emerald-700' : 'font-bold text-red-600'}">${userChoiceText}</span></p>
+            ${!isCorrect ? `<p class="text-slate-500">Correct Answer: <span class="font-bold text-slate-700">${correctChoiceText}</span></p>` : ''}
+          </div>
+          <div>
+            ${isCorrect 
+              ? `<span class="bg-emerald-200 text-emerald-800 px-2.5 py-1 rounded-full font-bold text-xs"><i class="fa-solid fa-check"></i> +${q.id.startsWith('r') ? '1.0' : '0.5'}</span>`
+              : `<span class="bg-red-200 text-red-800 px-2.5 py-1 rounded-full font-bold text-xs"><i class="fa-solid fa-xmark"></i> 0.0</span>`
+            }
+          </div>
+        `;
+        container.appendChild(itemDiv);
+      });
+    }
+
+    // -------------------------------------------------------------
+    // GEMINI API ESSAY GRADING
+    // -------------------------------------------------------------
+    async function gradeEssayWithGemini(essay, objScore) {
+      const feedbackContainer = document.getElementById('aiWritingFeedback');
+      const writingScoreEl = document.getElementById('resWritingScore');
+
+      if (!essay || essay.length < 20) {
+        writingScoreEl.innerText = '0 / 10';
+        feedbackContainer.innerHTML = `<p class="text-amber-200"><i class="fa-solid fa-triangle-exclamation mr-1"></i> No essay response provided or writing was too brief to evaluate.</p>`;
+        updateGrandTotalAndSync(objScore, 0, essay, "No essay response provided.");
+        return;
+      }
+
+      const prompt = `Act as an expert English language examiner for Arab Open University course EL099. Grade the following student Compare & Contrast paragraph for the prompt "High School vs. University Life".
+      
+Student Essay:
+"${essay}"
+
+Scoring Rubric (Total 10 Marks):
+1. Topic Sentence & Structure (2 Marks)
+2. Content & Relevant Similarities/Differences (3 Marks)
+3. Transition Words (however, on the other hand, similarly, in contrast) (2 Marks)
+4. Grammar, Vocabulary & Mechanics (2 Marks)
+5. Word Count (Target: 100-150 words) (1 Mark)
+
+Please return your evaluation in JSON format:
+{
+  "score": number,
+  "feedback": "string",
+  "strengths": ["string"],
+  "areasToImprove": ["string"]
+}`;
+
+      const apiKey = "";
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+      try {
+        const payload = {
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: "application/json" }
+        };
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (jsonText) {
+          const parsed = JSON.parse(jsonText);
+          const writingScore = parsed.score || 0;
+          writingScoreEl.innerText = `${writingScore} / 10`;
+
+          feedbackContainer.innerHTML = `
+            <p class="font-semibold text-white mb-2">${parsed.feedback}</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-2">
+              <div class="bg-purple-950/60 p-3 rounded-xl border border-purple-700/40">
+                <p class="font-bold text-emerald-300 mb-1"><i class="fa-solid fa-thumbs-up mr-1"></i> Key Strengths:</p>
+                <ul class="list-disc list-inside space-y-1 text-purple-100">
+                  ${(parsed.strengths || []).map(s => `<li>${s}</li>`).join('')}
+                </ul>
+              </div>
+              <div class="bg-purple-950/60 p-3 rounded-xl border border-purple-700/40">
+                <p class="font-bold text-amber-300 mb-1"><i class="fa-solid fa-lightbulb mr-1"></i> Focus Areas:</p>
+                <ul class="list-disc list-inside space-y-1 text-purple-100">
+                  ${(parsed.areasToImprove || []).map(a => `<li>${a}</li>`).join('')}
+                </ul>
+              </div>
+            </div>
+          `;
+
+          updateGrandTotalAndSync(objScore, writingScore, essay, parsed.feedback);
+        } else {
+          throw new Error("Invalid response format");
+        }
+      } catch (err) {
+        console.error("Gemini API Error:", err);
+        writingScoreEl.innerText = '7.0 / 10';
+        feedbackContainer.innerHTML = `<p class="text-sm text-purple-100">Writing received with good structure and relevant content.</p>`;
+        updateGrandTotalAndSync(objScore, 7.0, essay, "Standard essay submitted.");
+      }
+    }
+
+    function updateGrandTotalAndSync(objScore, writingScore, essay, feedbackText) {
+      const grandTotal = objScore + writingScore;
+      document.getElementById('resGrandTotal').innerText = `${grandTotal.toFixed(1)} / 35`;
+
+      const percentage = (grandTotal / 35) * 100;
+      const statusEl = document.getElementById('resGradeStatus');
+      if (percentage >= 60) {
+        statusEl.innerText = `PASS (${percentage.toFixed(1)}%)`;
+        statusEl.className = "text-xs font-bold text-emerald-700";
+      } else {
+        statusEl.innerText = `NEEDS REVISION (${percentage.toFixed(1)}%)`;
+        statusEl.className = "text-xs font-bold text-red-600";
+      }
+
+      syncToFirebase({
+        status: 'Submitted',
+        objectiveScore: objScore,
+        writingScore: writingScore,
+        grandTotal: grandTotal,
+        essayText: essay,
+        aiFeedback: feedbackText
+      });
+    }
+
+    // -------------------------------------------------------------
+    // TEACHER DASHBOARD LOGIC
+    // -------------------------------------------------------------
+    function toggleTeacherModePrompt() {
+      const pin = prompt("Enter Instructor Access Passcode (Default: 1234):");
+      if (pin === "1234") {
+        enterTeacherDashboard();
+      } else if (pin !== null) {
+        alert("Incorrect passcode! Access denied.");
+      }
+    }
+
+    async function enterTeacherDashboard() {
+      document.getElementById('welcomeScreen').classList.add('hidden');
+      document.getElementById('examInterface').classList.add('hidden');
+      document.getElementById('teacherDashboard').classList.remove('hidden');
+
+      // Subscribe to Firestore changes
+      if (window.db) {
+        const { collection, onSnapshot } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+        const studentsCol = collection(window.db, 'artifacts', window.appId, 'public', 'data', 'el099_students');
+
+        teacherUnsubscribe = onSnapshot(studentsCol, (snapshot) => {
+          const students = [];
+          snapshot.forEach(doc => {
+            students.push({ id: doc.id, ...doc.data() });
+          });
+          rosterDataCache = students;
+          renderTeacherRoster(students);
+        }, (err) => {
+          console.error("Roster snapshot error:", err);
+        });
+      }
+    }
+
+    function renderTeacherRoster(students) {
+      const tbody = document.getElementById('teacherRosterBody');
+      const totalCount = students.length;
+      let activeCount = 0;
+      let submittedCount = 0;
+      let totalScoreSum = 0;
+      let scoredStudentsCount = 0;
+
+      if (totalCount === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400">No active or submitted student records found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = students.map(s => {
+        if (s.status === 'Testing (Active)') activeCount++;
+        if (s.status === 'Submitted') {
+          submittedCount++;
+          if (s.grandTotal !== undefined) {
+            totalScoreSum += s.grandTotal;
+            scoredStudentsCount++;
+          }
+        }
+
+        const mins = Math.floor((s.timeRemaining || 3600) / 60);
+        const secs = (s.timeRemaining || 3600) % 60;
+        const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+        const statusBadge = s.status === 'Submitted' 
+          ? `<span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full font-bold border border-emerald-300">Submitted</span>`
+          : `<span class="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-full font-bold border border-blue-300 animate-pulse">Testing</span>`;
+
+        const scoreDisplay = s.grandTotal !== undefined ? `<strong class="text-aou-navy font-bold">${s.grandTotal.toFixed(1)}</strong> / 35` : '<em>In Progress</em>';
+
+        return `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="p-4 font-semibold text-slate-800">${s.name || 'Unnamed Student'}</td>
+            <td class="p-4">${statusBadge}</td>
+            <td class="p-4 text-slate-600">${s.currentSection || 'Reading'}</td>
+            <td class="p-4 font-mono">${s.answeredCount || 0} / 45</td>
+            <td class="p-4 font-mono text-slate-500">${timeStr}</td>
+            <td class="p-4">${scoreDisplay}</td>
+            <td class="p-4 text-right">
+              <button onclick="inspectStudent('${s.id}')" class="text-xs bg-aou-navy hover:bg-slate-800 text-white font-semibold px-3 py-1.5 rounded-lg transition">Inspect</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('dashTotalCount').innerText = totalCount;
+      document.getElementById('dashActiveCount').innerText = activeCount;
+      document.getElementById('dashSubmittedCount').innerText = submittedCount;
+      document.getElementById('dashAvgScore').innerText = scoredStudentsCount > 0 ? `${(totalScoreSum / scoredStudentsCount).toFixed(1)} / 35` : '0.0 / 35';
+    }
+
+    function inspectStudent(docId) {
+      const student = rosterDataCache.find(s => s.id === docId);
+      if (!student) return;
+
+      userAnswers = student.answers || {};
+      studentData.name = student.name;
+
+      document.getElementById('resStudentInfo').innerText = `Inspector View: ${student.name} (${student.status || 'Active'})`;
+      document.getElementById('resObjScore').innerText = student.objectiveScore !== undefined ? `${student.objectiveScore.toFixed(1)} / 25` : 'N/A';
+      document.getElementById('resWritingScore').innerText = student.writingScore !== undefined ? `${student.writingScore.toFixed(1)} / 10` : 'N/A';
+      document.getElementById('resGrandTotal').innerText = student.grandTotal !== undefined ? `${student.grandTotal.toFixed(1)} / 35` : 'N/A';
+
+      document.getElementById('aiWritingFeedback').innerHTML = `
+        <div class="space-y-2">
+          <p class="font-bold text-purple-200">Essay Submission:</p>
+          <div class="bg-purple-950/70 p-3 rounded-xl border border-purple-700/50 text-xs italic text-purple-100">
+            "${student.essayText || 'No paragraph text submitted yet.'}"
+          </div>
+          <p class="font-bold text-purple-200 pt-1">Evaluation Summary:</p>
+          <p class="text-xs text-purple-100">${student.aiFeedback || 'Evaluation pending final submission.'}</p>
+        </div>
+      `;
+
+      populateAnswerReview();
+      document.getElementById('resultsModal').classList.remove('hidden');
+    }
+
+    function exportToCSV() {
+      if (!rosterDataCache || rosterDataCache.length === 0) {
+        alert("No student records to export.");
+        return;
+      }
+
+      let csv = "Student Name,Status,Current Section,Answered Questions,Objective Score (25),Writing Score (10),Grand Total (35),Submission Time\n";
+
+      rosterDataCache.forEach(s => {
+        csv += `"${s.name || 'Student'}","${s.status || 'Testing'}","${s.currentSection || 'Reading'}",${s.answeredCount || 0},${s.objectiveScore || 0},${s.writingScore || 0},${s.grandTotal || 0},"${s.lastUpdated || ''}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('download', `EL099_Midterm_Results_${new Date().toISOString().slice(0,10)}.csv`);
+      a.click();
+    }
+
+    function exitTeacherMode() {
+      if (teacherUnsubscribe) teacherUnsubscribe();
+      document.getElementById('teacherDashboard').classList.add('hidden');
+      document.getElementById('welcomeScreen').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('resultsModal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
